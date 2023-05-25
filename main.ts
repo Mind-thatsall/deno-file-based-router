@@ -1,10 +1,9 @@
-import { debounce } from "https://deno.land/std@0.188.0/async/debounce.ts";
 import {
   createOrDeleteRoutes,
   createRoutesOnLoad,
   createValidPathName,
 } from "./createOrDeleteRoutes.ts";
-import { serve } from "https://deno.land/std@0.188.0/http/server.ts";
+import { serve } from "https://deno.land/std@0.189.0/http/server.ts";
 
 const routes: Array<URLPattern> = [];
 routes.push(new URLPattern({ pathname: "/" }));
@@ -34,15 +33,10 @@ serve(
   { port: 3000 },
 );
 
-const log = debounce((ev: Deno.FsEvent) => {
-  console.log("[%s] %s", ev.kind, ev.paths[0]);
-}, 200);
-
-const watcher = Deno.watchFs("./");
+const watcher = Deno.watchFs("./routes");
 let isAValidRoute = false;
 
 for await (const ev of watcher) {
-  log(ev);
   const pathname = createValidPathName(ev.paths[0].split("/"));
 
   if (ev.kind === "create" && !alreadyExistingPaths.has(pathname)) {

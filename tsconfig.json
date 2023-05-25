@@ -8,12 +8,11 @@
     "isolatedModules": true,
     "jsx": "react",
     "lib": [
-      "deno.window",
       "DOM",
       "ES5",
       "ES6",
       "DOM.Iterable",
-      "DOM.Extra"
+      "deno.ns"
     ],
     "module": "esnext",
     "moduleDetection": "force",
