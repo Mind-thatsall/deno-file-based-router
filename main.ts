@@ -1,8 +1,15 @@
-import * as http from "https://deno.land/std@0.188.0/http/mod.ts";
 import { debounce } from "https://deno.land/std@0.188.0/async/debounce.ts";
+import {
+  createOrDeleteRoutes,
+  createRoutesOnLoad,
+  createValidPathName,
+} from "./createOrDeleteRoutes.ts";
+import { serve } from "https://deno.land/std@0.188.0/http/server.ts";
 
 const routes: Array<URLPattern> = [];
 routes.push(new URLPattern({ pathname: "/" }));
+const alreadyExistingPaths = new Set<string>();
+createRoutesOnLoad(alreadyExistingPaths, routes, "./routes");
 
 async function handler(req: Request) {
   for (const route in routes) {
@@ -22,41 +29,35 @@ async function handler(req: Request) {
   return new Response("404", { status: 404 });
 }
 
-http.serve(
+serve(
   handler,
   { port: 3000 },
 );
-
-function createOrDeleteRoutes(eventName: string, pathname: string[]) {
-  const fullPathName = pathname.slice(pathname.indexOf("routes") + 1).join(
-    "/",
-  );
-
-  const indexOfPathName = routes.findIndex((route) =>
-    route.pathname === `/${fullPathName}`
-  );
-
-  // check the extension of file to see if it's a directory or a file
-  const newDirectory = !pathname[pathname.length - 1].includes(".html");
-
-  if (eventName === "create" && newDirectory) {
-    routes.push(new URLPattern({ pathname: `/${fullPathName}` }));
-    console.log(routes);
-  } else if (eventName === "remove" && indexOfPathName !== -1) {
-    routes.splice(indexOfPathName, 1);
-    console.log(routes);
-  }
-}
 
 const log = debounce((ev: Deno.FsEvent) => {
   console.log("[%s] %s", ev.kind, ev.paths[0]);
 }, 200);
 
 const watcher = Deno.watchFs("./");
+let isAValidRoute = false;
 
 for await (const ev of watcher) {
   log(ev);
-  if (ev.paths[0].includes("routes")) {
-    createOrDeleteRoutes(ev.kind, ev.paths[0].split("/"));
+  const pathname = createValidPathName(ev.paths[0].split("/"));
+
+  if (ev.kind === "create" && !alreadyExistingPaths.has(pathname)) {
+    console.log(ev.kind);
+    await Deno.lstat(ev.paths[0])
+      .then((file: Deno.FileInfo) => {
+        alreadyExistingPaths.add(pathname);
+        isAValidRoute = file.isDirectory;
+      })
+      .catch((err: Error) => console.error(err));
+  } else {
+    isAValidRoute = alreadyExistingPaths.has(pathname);
+  }
+
+  if (ev.paths[0].includes("routes") && isAValidRoute) {
+    createOrDeleteRoutes(routes, ev.kind, pathname);
   }
 }
