@@ -51,7 +51,7 @@ for await (const ev of watcher) {
     isAValidRoute = alreadyExistingPaths.has(pathname);
   }
 
-  if (ev.paths[0].includes("routes") && isAValidRoute) {
+  if (isAValidRoute) {
     createOrDeleteRoutes(routes, ev.kind, pathname);
   }
 }

@@ -20,7 +20,6 @@ export function createOrDeleteRoutes(
     routes.splice(indexOfPathName, 1);
     printRoutes("remove", routes);
   }
-  console.log("function runned");
 }
 
 export function printRoutes(action: string, routes: URLPattern[]) {
